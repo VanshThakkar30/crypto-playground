@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Playground</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Cryptography Playground 🛡️</h1>
+            <p>Select an algorithm to visualize its process.</p>
+        </header>
+
+        <main>
+            <div class="controls">
+                <label>1. Choose Cryptography Type:</label>
+                <div id="crypto-type-selector">
+                    <input type="radio" id="type-symmetric" name="crypto-type" value="symmetric" checked>
+                    <label for="type-symmetric">Symmetric</label>
+                    <input type="radio" id="type-asymmetric" name="crypto-type" value="asymmetric">
+                    <label for="type-asymmetric">Asymmetric</label>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div id="symmetric-controls">
+                    <label for="symmetric-algo-select">2. Choose Symmetric Algorithm:</label>
+                    <select id="symmetric-algo-select">
+                        <option value="aes">AES</option>
+                        <option value="des">DES</option>
+                        <option value="vigenere">Vigenère Cipher</option>
+                        <option value="playfair">Playfair Cipher</option>
+                        <option value="railfence">Rail Fence Cipher</option>
+                    </select>
+                </div>
+                <div id="asymmetric-controls" style="display: none;">
+                    <label for="asymmetric-algo-select">2. Choose Asymmetric Algorithm:</label>
+                    <select id="asymmetric-algo-select">
+                        <option value="rsa">RSA</option>
+                        <option value="ecc">ECC</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="standard-panel">
+                <div class="io-panel">
+                    <div class="io-box"><label for="input-text">Input Text</label><textarea id="input-text" rows="8"></textarea></div>
+                    <div class="io-box"><label for="output-text">Output Text</label><textarea id="output-text" rows="8" readonly></textarea></div>
+                </div>
+                <div id="key-panel" class="key-panel"><label for="key-input">Key / Parameters</label><input type="text" id="key-input"></div>
+            </div>
+
+            <div id="rsa-panel" class="key-panel rsa-panel" style="display: none;">
+                <button id="generate-rsa-btn">Generate New RSA Keys</button>
+                <div class="rsa-key-group">
+                    <div class="rsa-key-box"><label for="rsa-e">Public Exponent (e)</label><input type="text" id="rsa-e"></div>
+                    <div class="rsa-key-box"><label for="rsa-n">Modulus (n)</label><input type="text" id="rsa-n"></div>
+                    <div class="rsa-key-box"><label for="rsa-d">Private Exponent (d)</label><input type="text" id="rsa-d"></div>
+                </div>
+                <div class="rsa-full-key-display">
+                    <label>Full Public Key (e, n)</label>
+                    <input type="text" id="rsa-public-key" readonly>
+                    <label>Full Private Key (d, n)</label>
+                    <input type="text" id="rsa-private-key" readonly>
+                </div>
+            </div>
+
+            <div id="ecc-panel" class="key-panel" style="display: none;">
+                <div class="ecc-party">
+                    <h3>Party A (Alice)</h3>
+                    <button class="generate-ecc-btn" data-party="a">Generate Keys</button>
+                    <label>Private Key (a):</label><input type="text" id="ecc-priv-a" readonly>
+                    <label>Public Key (A = a*G):</label><input type="text" id="ecc-pub-a" readonly>
+                    <label><strong>Calculated Shared Secret:</strong></label><input type="text" id="ecc-secret-a" class="secret" readonly>
+                </div>
+                <div class="ecc-party">
+                    <h3>Party B (Bob)</h3>
+                    <button class="generate-ecc-btn" data-party="b">Generate Keys</button>
+                    <label>Private Key (b):</label><input type="text" id="ecc-priv-b" readonly>
+                    <label>Public Key (B = b*G):</label><input type="text" id="ecc-pub-b" readonly>
+                    <label><strong>Calculated Shared Secret:</strong></label><input type="text" id="ecc-secret-b" class="secret" readonly>
+                </div>
+                <button id="calculate-secret-btn">Calculate Shared Secret</button>
+            </div>
+            
+            <div class="actions">
+                <button id="encrypt-btn">Encrypt</button>
+                <button id="decrypt-btn">Decrypt</button>
+            </div>
+        </main>
+    </div>
+    <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
+</body>
+</html>
