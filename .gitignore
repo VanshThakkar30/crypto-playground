@@ -6,10 +6,6 @@ __pycache__/
 *.pyd
 .env
 
-# Emscripten / Build artifacts
-# Note: We are NOT ignoring the wasm files so the project works out-of-the-box when cloned.
-# In a CI/CD environment, you would typically ignore these and build them automatically.
-
 # IDE and OS files
 .vscode/
 .idea/
