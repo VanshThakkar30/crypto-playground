@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crypto Playground</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <div class="container">
@@ -24,6 +24,8 @@
                     <label for="type-symmetric">Symmetric</label>
                     <input type="radio" id="type-asymmetric" name="crypto-type" value="asymmetric">
                     <label for="type-asymmetric">Asymmetric</label>
+                    <input type="radio" id="type-key-exchange" name="crypto-type" value="key-exchange">
+                    <label for="type-key-exchange">Key Exchange</label>
                 </div>
             </div>
 
@@ -31,67 +33,79 @@
                 <div id="symmetric-controls">
                     <label for="symmetric-algo-select">2. Choose Symmetric Algorithm:</label>
                     <select id="symmetric-algo-select">
-                        <option value="aes">AES</option>
-                        <option value="des">DES</option>
-                        <option value="vigenere">Vigenère Cipher</option>
-                        <option value="playfair">Playfair Cipher</option>
-                        <option value="railfence">Rail Fence Cipher</option>
+                        <option value="aes">AES</option><option value="des">DES</option><option value="vigenere">Vigenère Cipher</option><option value="playfair">Playfair Cipher</option><option value="railfence">Rail Fence Cipher</option>
                     </select>
                 </div>
                 <div id="asymmetric-controls" style="display: none;">
                     <label for="asymmetric-algo-select">2. Choose Asymmetric Algorithm:</label>
                     <select id="asymmetric-algo-select">
-                        <option value="rsa">RSA</option>
-                        <option value="ecc">ECC</option>
+                        <option value="rsa">RSA</option><option value="ecies">ECC Encryption (ECIES)</option>
+                    </select>
+                </div>
+                <div id="key-exchange-controls" style="display: none;">
+                    <label for="key-exchange-algo-select">2. Choose Key Exchange Protocol:</label>
+                    <select id="key-exchange-algo-select">
+                        <option value="dh">Diffie-Hellman</option><option value="ecdh">Elliptic Curve Diffie-Hellman (ECDH)</option>
                     </select>
                 </div>
             </div>
 
-            <div id="standard-panel">
+            <div id="symmetric-panel" style="display: none;">
                 <div class="io-panel">
-                    <div class="io-box"><label for="input-text">Input Text</label><textarea id="input-text" rows="8"></textarea></div>
-                    <div class="io-box"><label for="output-text">Output Text</label><textarea id="output-text" rows="8" readonly></textarea></div>
+                    <div class="io-box"><label for="input-text-symm">Input Text</label><textarea id="input-text-symm" rows="8"></textarea></div>
+                    <div class="io-box"><label for="output-text-symm">Output Text</label><textarea id="output-text-symm" rows="8" readonly></textarea></div>
                 </div>
-                <div id="key-panel" class="key-panel"><label for="key-input">Key / Parameters</label><input type="text" id="key-input"></div>
+                <div class="key-panel"><label for="key-input-symm">Key / Parameters</label><input type="text" id="key-input-symm"></div>
+                <div class="actions"><button class="encrypt-btn">Encrypt</button><button class="decrypt-btn">Decrypt</button></div>
             </div>
 
-            <div id="rsa-panel" class="key-panel rsa-panel" style="display: none;">
-                <button id="generate-rsa-btn">Generate New RSA Keys</button>
-                <div class="rsa-key-group">
-                    <div class="rsa-key-box"><label for="rsa-e">Public Exponent (e)</label><input type="text" id="rsa-e"></div>
-                    <div class="rsa-key-box"><label for="rsa-n">Modulus (n)</label><input type="text" id="rsa-n"></div>
-                    <div class="rsa-key-box"><label for="rsa-d">Private Exponent (d)</label><input type="text" id="rsa-d"></div>
+            <div id="rsa-panel" style="display: none;">
+                 <div class="key-panel">
+                    <button id="generate-rsa-btn">Generate New RSA Keys</button>
+                    <div class="rsa-key-group">
+                        <div class="rsa-key-box"><label for="rsa-e">Public Exponent (e)</label><input type="text" id="rsa-e"></div>
+                        <div class="rsa-key-box"><label for="rsa-n">Modulus (n)</label><input type="text" id="rsa-n"></div>
+                        <div class="rsa-key-box"><label for="rsa-d">Private Exponent (d)</label><input type="text" id="rsa-d"></div>
+                    </div>
+                    <div class="rsa-full-key-display">
+                        <label>Full Public Key (e, n)</label><input type="text" id="rsa-public-key" readonly>
+                        <label>Full Private Key (d, n)</label><input type="text" id="rsa-private-key" readonly>
+                    </div>
                 </div>
-                <div class="rsa-full-key-display">
-                    <label>Full Public Key (e, n)</label>
-                    <input type="text" id="rsa-public-key" readonly>
-                    <label>Full Private Key (d, n)</label>
-                    <input type="text" id="rsa-private-key" readonly>
+                <div class="io-panel">
+                     <div class="io-box"><label for="input-text-rsa">Input Text</label><textarea id="input-text-rsa" rows="8"></textarea></div>
+                    <div class="io-box"><label for="output-text-rsa">Output Text</label><textarea id="output-text-rsa" rows="8" readonly></textarea></div>
                 </div>
-            </div>
-
-            <div id="ecc-panel" class="key-panel" style="display: none;">
-                <div class="ecc-party">
-                    <h3>Party A (Alice)</h3>
-                    <button class="generate-ecc-btn" data-party="a">Generate Keys</button>
-                    <label>Private Key (a):</label><input type="text" id="ecc-priv-a" readonly>
-                    <label>Public Key (A = a*G):</label><input type="text" id="ecc-pub-a" readonly>
-                    <label><strong>Calculated Shared Secret:</strong></label><input type="text" id="ecc-secret-a" class="secret" readonly>
-                </div>
-                <div class="ecc-party">
-                    <h3>Party B (Bob)</h3>
-                    <button class="generate-ecc-btn" data-party="b">Generate Keys</button>
-                    <label>Private Key (b):</label><input type="text" id="ecc-priv-b" readonly>
-                    <label>Public Key (B = b*G):</label><input type="text" id="ecc-pub-b" readonly>
-                    <label><strong>Calculated Shared Secret:</strong></label><input type="text" id="ecc-secret-b" class="secret" readonly>
-                </div>
-                <button id="calculate-secret-btn">Calculate Shared Secret</button>
+                <div class="actions"><button class="encrypt-btn">Encrypt</button><button class="decrypt-btn">Decrypt</button></div>
             </div>
             
-            <div class="actions">
-                <button id="encrypt-btn">Encrypt</button>
-                <button id="decrypt-btn">Decrypt</button>
+            <div id="ecies-panel" style="display: none;">
+                 <div class="key-panel">
+                    <button id="generate-ecies-btn">Generate New ECC Keys</button>
+                    <label>Your Private Key (a random scalar):</label><input type="text" id="ecies-priv" readonly>
+                    <label>Your Public Key (a Point on the Curve):</label><input type="text" id="ecies-pub" readonly>
+                </div>
+                <div class="io-panel">
+                     <div class="io-box"><label for="input-text-ecies">Input Text</label><textarea id="input-text-ecies" rows="8"></textarea></div>
+                    <div class="io-box"><label for="output-text-ecies">Output Text (Ciphertext)</label><textarea id="output-text-ecies" rows="8" readonly></textarea></div>
+                </div>
+                 <div class="actions"><button class="encrypt-btn">Encrypt</button><button class="decrypt-btn">Decrypt</button></div>
             </div>
+
+            <div id="dh-panel" class="key-panel" style="display: none;">
+                <div class="dh-params"><p><strong>Public Parameters</strong> (Agreed upon by both parties)</p><label>Prime Modulus (p):</label><input type="text" id="dh-p" value="3851"><label>Generator (g):</label><input type="text" id="dh-g" value="2"></div>
+                <div class="ecc-party"><h3>Party A (Alice)</h3><label>Private Key (a):</label><input type="text" id="dh-priv-a"><button class="generate-dh-btn" data-party="a">Generate Public Key</button><label>Public Key (A = g^a mod p):</label><input type="text" id="dh-pub-a" readonly><label><strong>Calculated Shared Secret:</strong></label><input type="text" id="dh-secret-a" class="secret" readonly></div>
+                <div class="ecc-party"><h3>Party B (Bob)</h3><label>Private Key (b):</label><input type="text" id="dh-priv-b"><button class="generate-dh-btn" data-party="b">Generate Public Key</button><label>Public Key (B = g^b mod p):</label><input type="text" id="dh-pub-b" readonly><label><strong>Calculated Shared Secret:</strong></label><input type="text" id="dh-secret-b" class="secret" readonly></div>
+                <button id="calculate-dh-secret-btn">Calculate Shared Secret</button>
+            </div>
+            <div id="ecdh-panel" class="key-panel" style="display: none;">
+                <p><strong>Public Parameters:</strong> A specific Elliptic Curve (y² = x³ + 7 mod 3851) and a Generator Point G(2, 5) are hard-coded.</p>
+                <div class="ecc-party"><h3>Party A (Alice)</h3><button class="generate-ecdh-btn" data-party="a">Generate Keys</button><label>Private Key (a):</label><input type="text" id="ecdh-priv-a" readonly><label>Public Key (A = a*G):</label><input type="text" id="ecdh-pub-a" readonly><label><strong>Calculated Shared Secret (x-coord):</strong></label><input type="text" id="ecdh-secret-a" class="secret" readonly></div>
+                <div class="ecc-party"><h3>Party B (Bob)</h3><button class="generate-ecdh-btn" data-party="b">Generate Keys</button><label>Private Key (b):</label><input type="text" id="ecdh-priv-b" readonly><label>Public Key (B = b*G):</label><input type="text" id="ecdh-pub-b" readonly><label><strong>Calculated Shared Secret (x-coord):</strong></label><input type="text" id="ecdh-secret-b" class="secret" readonly></div>
+                <button id="calculate-ecdh-secret-btn">Calculate Shared Secret</button>
+            </div>
+
+            <div id="visual-panel" class="visualization-area" style="display:none"><h3 id="visual-title">Visualization</h3><div id="visual-content"></div></div>
         </main>
     </div>
     <script src="{{ url_for('static', filename='js/main.js') }}" defer></script>
