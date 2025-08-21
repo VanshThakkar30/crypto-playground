@@ -52,6 +52,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const type = document.querySelector('input[name="crypto-type"]:checked').value;
         const algorithm = getCurrentAlgorithm();
         console.log(`UI Update for: ${type} -> ${algorithm}`);
+        
+        // Add loading animation
+        document.body.classList.add('loading');
+        setTimeout(() => document.body.classList.remove('loading'), 300);
+        
         Object.values(panels).forEach(p => p.style.display = 'none');
         visualPanel.style.display = 'none';
 
@@ -74,8 +79,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (algorithm === 'rsa') panels.rsa.style.display = 'block';
             else if (algorithm === 'ecies') panels.ecies.style.display = 'block';
         } else if (type === 'key-exchange') {
-            if (algorithm === 'dh') panels.dh.style.display = 'flex';
-            else if (algorithm === 'ecdh') panels.ecdh.style.display = 'flex';
+            if (algorithm === 'dh') panels.dh.style.display = 'block';
+            else if (algorithm === 'ecdh') panels.ecdh.style.display = 'block';
         }
     }
     
@@ -90,10 +95,10 @@ document.addEventListener('DOMContentLoaded', () => {
             row += dir;
             col++;
         }
-        let visualHtml = '<pre>';
+        let visualHtml = '<pre style="color: var(--accent-tertiary); font-size: 1.2rem; line-height: 2;">';
         for (const r of matrix) visualHtml += r.join('').replace(/\s/g, ' ') + '\n';
         visualHtml += '</pre>';
-        visualContent.innerHTML = `<h3>Rail Fence Pattern (Rails: ${rails})</h3>${visualHtml}`;
+        visualContent.innerHTML = `<h3 style="color: var(--accent-primary); margin-bottom: 1rem;">🚂 Rail Fence Pattern (Rails: ${rails})</h3>${visualHtml}`;
     }
 
     // --- Crypto Handlers ---
@@ -190,6 +195,36 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) { console.error("Error during crypto action:", e); alert(`An error occurred while processing '${algorithm}'. Check console.`); }
     }
     
+    // --- Add visual feedback for button clicks ---
+    function addButtonFeedback() {
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                // Create ripple effect
+                const ripple = document.createElement('span');
+                const rect = this.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height);
+                const x = e.clientX - rect.left - size / 2;
+                const y = e.clientY - rect.top - size / 2;
+                
+                ripple.style.cssText = `
+                    position: absolute;
+                    width: ${size}px;
+                    height: ${size}px;
+                    left: ${x}px;
+                    top: ${y}px;
+                    background: rgba(255, 255, 255, 0.3);
+                    border-radius: 50%;
+                    transform: scale(0);
+                    animation: ripple 0.6s linear;
+                    pointer-events: none;
+                `;
+                
+                this.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 600);
+            });
+        });
+    }
+    
     // --- Key Generation and Exchange Handlers ---
     async function generateRsaKeys() { try { const Module = await loadWasmModule('rsa'); const c_generate_keys = Module.cwrap('generate_keys', 'string', []); const keys = c_generate_keys().split(','); const [n_val, e_val, d_val] = keys; document.getElementById('rsa-n').value = n_val; document.getElementById('rsa-e').value = e_val; document.getElementById('rsa-d').value = d_val; document.getElementById('rsa-public-key').value = `(${e_val}, ${n_val})`; document.getElementById('rsa-private-key').value = `(${d_val}, ${n_val})`; } catch (e) { console.error("Error generating RSA keys:", e); } }
     async function generateEciesKeys() { try { const Module = await loadWasmModule('ecc'); const c_generate_keys = Module.cwrap('generate_ecc_keys', 'string', []); const keys = c_generate_keys().split(','); const [priv_val, pub_x, pub_y] = keys; document.getElementById('ecies-priv').value = priv_val; document.getElementById('ecies-pub').value = `(${pub_x}, ${pub_y})`; } catch (e) { console.error("Error generating ECIES keys:", e); } }
@@ -210,6 +245,23 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.generate-ecdh-btn').forEach(btn => btn.addEventListener('click', (e) => generateEcdhKeys(e.target.dataset.party)));
     document.getElementById('calculate-ecdh-secret-btn').addEventListener('click', calculateEcdhSharedSecret);
 
+    // Add CSS for ripple animation
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes ripple {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+        button {
+            position: relative;
+            overflow: hidden;
+        }
+    `;
+    document.head.appendChild(style);
+    
     // --- Initial Page Setup ---
+    addButtonFeedback();
     document.querySelector('input[name="crypto-type"]:checked').dispatchEvent(new Event('change'));
 });
