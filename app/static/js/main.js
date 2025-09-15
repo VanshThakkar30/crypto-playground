@@ -143,7 +143,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!key) { alert('Please provide a key.'); return; }
                 const blockSize = (algorithm === 'aes') ? 16 : 8;
                 if (key.length !== blockSize) { alert(`Invalid key: ${algorithm.toUpperCase()} key must be exactly ${blockSize} characters long.`); return; }
-                const c_process = Module.cwrap(`process_${algorithm}`, null, ['number', 'number', 'number', 'number', 'boolean']);
+                
+                // Both AES and DES now return error codes
+                let c_process;
+                if (algorithm === 'aes') {
+                    c_process = Module.cwrap('process_aes', 'number', ['number', 'number', 'number', 'number', 'boolean']);
+                } else {
+                    c_process = Module.cwrap('process_des', 'number', ['number', 'number', 'number', 'number', 'boolean']);
+                }
+                
                 const encoder = new TextEncoder(), decoder = new TextDecoder();
                 const keyBytes = encoder.encode(key.padEnd(blockSize, '\0')).slice(0, blockSize);
                 let dataBytes;
@@ -158,17 +166,67 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (dataBytes.length % blockSize !== 0) { alert(`Invalid ciphertext. Length must be a multiple of ${blockSize}.`); return; }
                     } catch (e) { alert('Invalid Base64 input for decryption.'); return; }
                 }
+                
                 const dataPtr = Module._malloc(dataBytes.length), keyPtr = Module._malloc(keyBytes.length), outputPtr = Module._malloc(dataBytes.length);
-                Module.HEAPU8.set(dataBytes, dataPtr); Module.HEAPU8.set(keyBytes, keyPtr);
-                c_process(dataPtr, dataBytes.length, keyPtr, outputPtr, (action === 'encrypt'));
-                let resultBytes = Module.HEAPU8.slice(outputPtr, outputPtr + dataBytes.length);
-                Module._free(dataPtr); Module._free(keyPtr); Module._free(outputPtr);
-                if (action === 'encrypt') {
-                    result = btoa(String.fromCharCode.apply(null, resultBytes));
-                } else {
-                    const paddingValue = resultBytes[resultBytes.length - 1];
-                    if (paddingValue > 0 && paddingValue <= 16 && paddingValue <= resultBytes.length) resultBytes = resultBytes.slice(0, resultBytes.length - paddingValue);
-                    result = decoder.decode(resultBytes);
+                if (!dataPtr || !keyPtr || !outputPtr) {
+                    alert('Memory allocation failed. Please try again.');
+                    if (dataPtr) Module._free(dataPtr);
+                    if (keyPtr) Module._free(keyPtr);
+                    if (outputPtr) Module._free(outputPtr);
+                    return;
+                }
+                
+                try {
+                    // Additional validation
+                    if (dataBytes.length === 0) {
+                        alert('Invalid input data length.');
+                        Module._free(dataPtr); Module._free(keyPtr); Module._free(outputPtr);
+            return;
+        }
+
+                    Module.HEAPU8.set(dataBytes, dataPtr); 
+                    Module.HEAPU8.set(keyBytes, keyPtr);
+                    
+                    let success = c_process(dataPtr, dataBytes.length, keyPtr, outputPtr, (action === 'encrypt'));
+                    
+                    if (!success) {
+                        alert(`${algorithm.toUpperCase()} processing failed. Please check your input and try again.`);
+                        Module._free(dataPtr); Module._free(keyPtr); Module._free(outputPtr);
+                return;
+            }
+
+                    let resultBytes = Module.HEAPU8.slice(outputPtr, outputPtr + dataBytes.length);
+                    
+                    // Validate result
+                    if (!resultBytes || resultBytes.length === 0) {
+                        alert('Invalid output from encryption/decryption.');
+                        Module._free(dataPtr); Module._free(keyPtr); Module._free(outputPtr);
+                return;
+            }
+            
+                    Module._free(dataPtr); Module._free(keyPtr); Module._free(outputPtr);
+                    
+            if (action === 'encrypt') {
+                        result = btoa(String.fromCharCode.apply(null, resultBytes));
+            } else {
+                        const paddingValue = resultBytes[resultBytes.length - 1];
+                        if (paddingValue > 0 && paddingValue <= blockSize && paddingValue <= resultBytes.length) {
+                            resultBytes = resultBytes.slice(0, resultBytes.length - paddingValue);
+                        }
+                        result = decoder.decode(resultBytes);
+                    }
+                } catch (error) {
+                    console.error('Crypto processing error:', error);
+                    alert(`Error during ${algorithm.toUpperCase()} processing: ${error.message}`);
+                    // Ensure cleanup even if there's an error
+                    try {
+                        Module._free(dataPtr); 
+                        Module._free(keyPtr); 
+                        Module._free(outputPtr);
+                    } catch (cleanupError) {
+                        console.error('Cleanup error:', cleanupError);
+                    }
+                    return;
                 }
             } else if (algorithm === 'rsa') {
                 const n = document.getElementById('rsa-n').value, e = document.getElementById('rsa-e').value, d = document.getElementById('rsa-d').value;
@@ -184,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const c_encrypt_ecies = Module.cwrap('encrypt_ecies', 'string', ['string', 'number', 'number']);
                     const pubKey = pubKeyStr.replace(/[() ]/g, '').split(',');
                     result = c_encrypt_ecies(text, BigInt(pubKey[0]), BigInt(pubKey[1]));
-                } else {
+        } else {
                     const privKeyStr = document.getElementById('ecies-priv').value;
                     if (!privKeyStr) { alert("Please generate your key pair to get a private key for decryption."); return; }
                     const c_decrypt_ecies = Module.cwrap('decrypt_ecies', 'string', ['string', 'number']);

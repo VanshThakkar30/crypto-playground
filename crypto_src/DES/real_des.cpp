@@ -1,5 +1,5 @@
-// crypto_src/DES/des.cpp
-// Real DES implementation with proper cryptographic security
+// crypto_src/DES/real_des.cpp
+// Real DES implementation with proper security
 #include <cstdint>
 #include <emscripten.h>
 #include <cstring>

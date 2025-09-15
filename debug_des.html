@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug DES Module</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .result { margin: 10px 0; padding: 10px; background: #f0f0f0; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e8; color: #2e7d32; }
+        button { padding: 10px 20px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Debug DES Module</h1>
+    <button onclick="testModule()">Test DES Module</button>
+    <div id="results"></div>
+
+    <script src="./app/static/wasm/des.js"></script>
+    <script>
+        function addResult(message, isError = false) {
+            const div = document.createElement('div');
+            div.className = isError ? 'result error' : 'result success';
+            div.textContent = message;
+            document.getElementById('results').appendChild(div);
+        }
+
+        function testModule() {
+            addResult('Testing DES module...');
+            
+            // Check if Module is available
+            if (typeof Module === 'undefined') {
+                addResult('❌ Module is not defined', true);
+                return;
+            }
+            
+            addResult('✅ Module is defined');
+            
+            // Check if required functions exist
+            if (typeof Module._malloc === 'undefined') {
+                addResult('❌ _malloc is not available', true);
+                return;
+            }
+            
+            addResult('✅ _malloc is available');
+            
+            if (typeof Module._free === 'undefined') {
+                addResult('❌ _free is not available', true);
+                return;
+            }
+            
+            addResult('✅ _free is available');
+            
+            if (typeof Module.HEAPU8 === 'undefined') {
+                addResult('❌ HEAPU8 is not available', true);
+                return;
+            }
+            
+            addResult('✅ HEAPU8 is available');
+            
+            // Check if cwrap is available
+            if (typeof Module.cwrap === 'undefined') {
+                addResult('❌ cwrap is not available', true);
+                return;
+            }
+            
+            addResult('✅ cwrap is available');
+            
+            // Try to create the cwrap function
+            try {
+                const c_process = Module.cwrap('process_des', 'number', ['number', 'number', 'number', 'number', 'boolean']);
+                addResult('✅ process_des cwrap created successfully');
+                
+                // Test with simple data
+                const testData = new Uint8Array([72, 101, 108, 108, 111, 0, 0, 0]); // "Hello" + padding
+                const testKey = new Uint8Array([49, 50, 51, 52, 53, 54, 55, 56]); // "12345678"
+                
+                const dataPtr = Module._malloc(8);
+                const keyPtr = Module._malloc(8);
+                const outputPtr = Module._malloc(8);
+                
+                if (!dataPtr || !keyPtr || !outputPtr) {
+                    addResult('❌ Memory allocation failed', true);
+                    return;
+                }
+                
+                addResult('✅ Memory allocated successfully');
+                
+                Module.HEAPU8.set(testData, dataPtr);
+                Module.HEAPU8.set(testKey, keyPtr);
+                
+                addResult('✅ Data copied to WASM memory');
+                
+                const result = c_process(dataPtr, 8, keyPtr, outputPtr, true);
+                
+                if (result === 1) {
+                    addResult('✅ process_des returned success');
+                    
+                    const output = Module.HEAPU8.slice(outputPtr, outputPtr + 8);
+                    addResult('✅ Output: ' + Array.from(output).join(', '));
+                } else {
+                    addResult('❌ process_des returned failure: ' + result, true);
+                }
+                
+                Module._free(dataPtr);
+                Module._free(keyPtr);
+                Module._free(outputPtr);
+                
+                addResult('✅ Memory freed successfully');
+                
+            } catch (error) {
+                addResult('❌ Error during test: ' + error.message, true);
+            }
+        }
+    </script>
+</body>
+</html>
